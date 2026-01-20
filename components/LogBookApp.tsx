@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ScrollView, 
-  Modal,
-  Alert,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  ActivityIndicator
-} from 'react-native';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { addDoc, collection, deleteDoc, doc, getDocs, getFirestore, orderBy, query, updateDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 // Your Firebase Configuration
 const firebaseConfig = {
@@ -34,7 +33,7 @@ const db = getFirestore(app);
 
 // Google Sheets Integration Function
 const syncToGoogleSheets = async (entry: any) => {
-  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzJg9iVO5Dr6mnpjnpV5D4l5MM7eME92eIGIGB9QUii/dev';
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIEfooYAfGBO8SYe8gX9iUL6zRbeOXy6zIAVIJgpifBy1f4rT9CDTLrAvA03aMFZ331Q/exec';
   
   try {
     const response = await fetch(SHEET_URL, {
@@ -118,18 +117,18 @@ const EquipmentModal = ({ visible, onClose, onSave, existingEquipment }: any) =>
 };
 
 // Equipment Quantity Selection Modal
-const QuantityModal = ({ visible, onClose, equipment, onConfirm, initialQuantities = {} }: any) => {
+const QuantityModal = ({ visible, onClose, equipment, onConfirm }: any) => {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (visible) {
-      const initialQty: Record<string, number> = {};
+      const initialQuantities: Record<string, number> = {};
       equipment.forEach((item: string) => {
-        initialQty[item] = initialQuantities[item] || 0;
+        initialQuantities[item] = 0;
       });
-      setQuantities(initialQty);
+      setQuantities(initialQuantities);
     }
-  }, [visible, equipment, initialQuantities]);
+  }, [visible, equipment]);
 
   const updateQuantity = (item: string, qty: string) => {
     setQuantities({ ...quantities, [item]: parseInt(qty) || 0 });
@@ -175,134 +174,13 @@ const QuantityModal = ({ visible, onClose, equipment, onConfirm, initialQuantiti
   );
 };
 
-// Edit Entry Modal
-const EditEntryModal = ({ visible, onClose, entry, equipment, onSave }: any) => {
-  const [editData, setEditData] = useState({
-    date: '',
-    quantities: {} as Record<string, number>,
-    names: '',
-    affiliation: ''
-  });
-  const [showQuantityModal, setShowQuantityModal] = useState(false);
-
-  useEffect(() => {
-    if (entry) {
-      setEditData({
-        date: entry.date,
-        quantities: entry.quantities || {},
-        names: entry.names,
-        affiliation: entry.affiliation
-      });
-    }
-  }, [entry]);
-
-  const handleQuantityConfirm = (quantities: Record<string, number>) => {
-    setEditData({ ...editData, quantities });
-  };
-
-  const handleSave = () => {
-    if (!editData.names || !editData.affiliation || Object.keys(editData.quantities).length === 0) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    const hasQuantity = Object.values(editData.quantities).some(qty => qty > 0);
-    if (!hasQuantity) {
-      Alert.alert('Error', 'Please select at least one equipment with quantity > 0');
-      return;
-    }
-
-    onSave(editData);
-  };
-
-  const getEquipmentSummary = (quantities: Record<string, number>) => {
-    return Object.entries(quantities)
-      .filter(([_, qty]) => qty > 0)
-      .map(([item, qty]) => `${item}: ${qty}`)
-      .join(', ') || 'None selected';
-  };
-
-  return (
-    <>
-      <Modal visible={visible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Edit Entry</Text>
-            
-            <ScrollView style={styles.editScrollView}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Date</Text>
-                <TextInput
-                  style={styles.input}
-                  value={editData.date}
-                  onChangeText={(text) => setEditData({ ...editData, date: text })}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Equipment</Text>
-                <TouchableOpacity
-                  style={styles.selectEquipmentButton}
-                  onPress={() => setShowQuantityModal(true)}
-                >
-                  <Text style={styles.selectEquipmentText}>
-                    {getEquipmentSummary(editData.quantities)}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Names</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter names"
-                  value={editData.names}
-                  onChangeText={(text) => setEditData({ ...editData, names: text })}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Affiliation</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter affiliation"
-                  value={editData.affiliation}
-                  onChangeText={(text) => setEditData({ ...editData, affiliation: text })}
-                />
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <QuantityModal
-        visible={showQuantityModal}
-        onClose={() => setShowQuantityModal(false)}
-        equipment={equipment}
-        onConfirm={handleQuantityConfirm}
-        initialQuantities={editData.quantities}
-      />
-    </>
-  );
-};
-
 // Main LogBook Component
 export default function LogBookApp() {
   const [equipment, setEquipment] = useState<string[]>(['Microscope', 'Pipette', 'Centrifuge', 'Beaker']);
   const [entries, setEntries] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -330,6 +208,36 @@ export default function LogBookApp() {
     }
   };
 
+  const handleEdit = (entry: any) => {
+    setFormData({
+      date: entry.date || new Date().toISOString().split('T')[0],
+      quantities: entry.quantities || {},
+      names: entry.names || '',
+      affiliation: entry.affiliation || ''
+    });
+    setEditingId(entry.id);
+    // Optionally scroll to top or open form; UI already shows form above
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        setLoading(true);
+        try {
+          await deleteDoc(doc(db, 'logEntries', id));
+          setEntries(entries.filter(e => e.id !== id));
+          Alert.alert('Deleted', 'Entry deleted successfully');
+        } catch (error: any) {
+          console.error('Error deleting entry:', error);
+          Alert.alert('Error', 'Failed to delete entry: ' + error.message);
+        } finally {
+          setLoading(false);
+        }
+      }}
+    ]);
+  };
+
   const handleUpdateEquipment = (newEquipment: string[]) => {
     setEquipment(newEquipment);
     setFormData({ ...formData, quantities: {} });
@@ -338,7 +246,6 @@ export default function LogBookApp() {
   const handleQuantityConfirm = (quantities: Record<string, number>) => {
     setFormData({ ...formData, quantities });
   };
-
   const handleSubmit = async () => {
     if (!formData.names || !formData.affiliation || Object.keys(formData.quantities).length === 0) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -353,22 +260,37 @@ export default function LogBookApp() {
 
     setLoading(true);
 
-    // Get current timestamp
-    const now = new Date();
-    const timestamp = now.toISOString();
-    const formattedTimestamp = now.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
+    if (editingId) {
+      // Update existing entry
+      const updatedFields = {
+        ...formData,
+        timestamp: new Date().toISOString(),
+      };
+      try {
+        await updateDoc(doc(db, 'logEntries', editingId), updatedFields as any);
+        setEntries(entries.map(e => e.id === editingId ? { id: editingId, ...e, ...updatedFields } : e));
+        await syncToGoogleSheets({ ...updatedFields, id: editingId });
+        setEditingId(null);
+        setFormData({
+          date: new Date().toISOString().split('T')[0],
+          quantities: {},
+          names: '',
+          affiliation: ''
+        });
+        Alert.alert('Success', 'Entry updated successfully!');
+      } catch (error: any) {
+        console.error('Error updating entry:', error);
+        Alert.alert('Error', 'Failed to update entry: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
+    // Create new entry
     const entry = {
       ...formData,
-      timestamp: timestamp,
-      formattedTimestamp: formattedTimestamp,
+      timestamp: new Date().toISOString(),
       createdAt: new Date()
     };
 
@@ -391,85 +313,6 @@ export default function LogBookApp() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleEdit = (entry: any) => {
-    setEditingEntry(entry);
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async (updatedData: any) => {
-    setLoading(true);
-    try {
-      const entryRef = doc(db, 'logEntries', editingEntry.id);
-      
-      // Get current timestamp for update
-      const now = new Date();
-      const timestamp = now.toISOString();
-      const formattedTimestamp = now.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-
-      const updatedEntry = {
-        ...updatedData,
-        timestamp: timestamp,
-        formattedTimestamp: formattedTimestamp,
-        updatedAt: new Date()
-      };
-
-      await updateDoc(entryRef, updatedEntry);
-      
-      // Update local state
-      setEntries(entries.map(e => 
-        e.id === editingEntry.id 
-          ? { id: editingEntry.id, ...updatedEntry } 
-          : e
-      ));
-      
-      setShowEditModal(false);
-      setEditingEntry(null);
-      Alert.alert('Success', 'Entry updated successfully!');
-    } catch (error: any) {
-      console.error('Error updating entry:', error);
-      Alert.alert('Error', 'Failed to update entry: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = (entry: any) => {
-    Alert.alert(
-      'Delete Entry',
-      'Are you sure you want to delete this entry?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await deleteDoc(doc(db, 'logEntries', entry.id));
-              setEntries(entries.filter(e => e.id !== entry.id));
-              Alert.alert('Success', 'Entry deleted successfully!');
-            } catch (error: any) {
-              console.error('Error deleting entry:', error);
-              Alert.alert('Error', 'Failed to delete entry: ' + error.message);
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ]
-    );
   };
 
   const getEquipmentSummary = (quantities: Record<string, number>) => {
@@ -550,7 +393,7 @@ export default function LogBookApp() {
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.submitButtonText}>Add Entry</Text>
+              <Text style={styles.submitButtonText}>{editingId ? 'Update Entry' : 'Add Entry'}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -582,28 +425,12 @@ export default function LogBookApp() {
                   <Text style={styles.entryLabel}>Affiliation:</Text>
                   <Text style={styles.entryValue}>{entry.affiliation}</Text>
                 </View>
-                {entry.formattedTimestamp && (
-                  <View style={styles.entryRow}>
-                    <Text style={styles.entryLabel}>Timestamp:</Text>
-                    <Text style={[styles.entryValue, styles.timestampText]}>
-                      {entry.formattedTimestamp}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Action Buttons */}
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity 
-                    style={styles.editButton}
-                    onPress={() => handleEdit(entry)}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={[styles.actionButton, styles.editButton]} onPress={() => handleEdit(entry)}>
+                    <Text style={styles.actionButtonText}>Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(entry)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => handleDelete(entry.id)}>
+                    <Text style={styles.actionButtonText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -625,17 +452,6 @@ export default function LogBookApp() {
         onClose={() => setShowQuantityModal(false)}
         equipment={equipment}
         onConfirm={handleQuantityConfirm}
-      />
-
-      <EditEntryModal
-        visible={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingEntry(null);
-        }}
-        entry={editingEntry}
-        equipment={equipment}
-        onSave={handleSaveEdit}
       />
     </SafeAreaView>
   );
@@ -761,49 +577,11 @@ const styles = StyleSheet.create({
   },
   entryValue: {
     color: '#6b7280',
-    flex: 1,
-    textAlign: 'right',
   },
   equipmentValue: {
     flex: 1,
     textAlign: 'right',
   },
-  timestampText: {
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  actionButtons: {
-flexDirection: 'row',
-  justifyContent: 'flex-end', 
-  marginTop: 12,
-  gap: 8,
-  },
-editButton: {
-  // Remove flex: 1
-  backgroundColor: '#3b82f6',
-  borderRadius: 6,
-  paddingVertical: 6,    // Reduced from 10
-  paddingHorizontal: 12,  // Added horizontal padding
-},
-editButtonText: {
-  color: 'white',
-  textAlign: 'center',
-  fontWeight: '600',
-  fontSize: 12,          // Smaller font
-},
-deleteButton: {
-  // Remove flex: 1
-  backgroundColor: '#ce5656',
-  borderRadius: 6,
-  paddingVertical: 6,    // Reduced from 10
-  paddingHorizontal: 12,  // Added horizontal padding
-},
-deleteButtonText: {
-  color: 'white',
-  textAlign: 'center',
-  fontWeight: '600',
-  fontSize: 12,          // Smaller font
-},
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -911,7 +689,25 @@ deleteButtonText: {
     textAlign: 'center',
     fontWeight: '600',
   },
-  editScrollView: {
-    maxHeight: 400,
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 8,
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  editButton: {
+    backgroundColor: '#059669',
+  },
+  deleteButton: {
+    backgroundColor: '#dc2626',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });
