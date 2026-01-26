@@ -8,33 +8,31 @@
     "scheme": "colablogbook",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#2563eb"
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.colab.logbook"
     },
-
     "android": {
       "package": "com.colab.logbook",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundColor": "#2563eb"
       },
-      "permissions": ["INTERNET"]
+      "permissions": [
+        "INTERNET",
+        "INTERNET"
+      ]
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
     },
-
     "plugins": [
       [
         "expo-splash-screen",
@@ -46,11 +44,16 @@
         }
       ]
     ],
-
     "extra": {
       "eas": {
         "projectId": "afcc0894-7002-4d26-a9ce-a2bf99a55b64"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/afcc0894-7002-4d26-a9ce-a2bf99a55b64"
     }
   }
 }
