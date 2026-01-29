@@ -47,7 +47,7 @@ const syncToGoogleSheets = async (entry: any, action: 'add' | 'update' | 'delete
       .filter(([_, qty]) => Number(qty) > 0)
       .map(([item, qty]) => `${item}: ${qty}`)
       .join(', ');
- 
+ //test only
     const sheetData = {
       id: entry.id,
       date: entry.date,
